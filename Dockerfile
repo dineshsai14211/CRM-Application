@@ -4,10 +4,6 @@ FROM python:latest AS builder
 # Set the working directory in the container
 WORKDIR /main
 
-# Install system dependencies for psycopg2
-RUN apt-get update && apt-get install -y \
-    libpq-dev gcc
-
 # Copy the requirements file to the container
 COPY requirements.txt .
 
@@ -22,10 +18,6 @@ FROM python:3.9-slim
 
 # Set the working directory in the container
 WORKDIR /main
-
-# Install system dependencies for psycopg2
-RUN apt-get update && apt-get install -y \
-    libpq-dev gcc && rm -rf /var/lib/apt/lists/*
 
 # Copy only the installed dependencies from the builder stage
 COPY --from=builder /usr/local/lib/python*/site-packages /usr/local/lib/python*/site-packages

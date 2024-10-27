@@ -1,4 +1,4 @@
 flask
 flask_sqlalchemy
-psycopg2
+psycopg2-binary
 num2words
