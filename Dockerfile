@@ -14,7 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Stage 2: Run
-FROM python:latest
+FROM python:3.9-slim
 
 # Set the working directory in the container
 WORKDIR /main
