@@ -3,11 +3,12 @@ import uuid
 import os
 
 from datetime import datetime
-import psycopg2
+
 # thrid party imports
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import SQLAlchemyError
+import psycopg2
 
 # local imports
 from utilities.utility import get_probability, currency_conversion, convert_amount_to_word
