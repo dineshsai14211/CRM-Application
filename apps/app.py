@@ -1,6 +1,8 @@
 import psycopg2
 import random
 import uuid
+import os
+
 from datetime import datetime
 
 # thrid party imports

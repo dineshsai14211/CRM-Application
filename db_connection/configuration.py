@@ -1,1 +1,1 @@
-DATABASE_URL = "postgresql://postgres:2003@localhost:5432/postgres"
+DATABASE_URL =  os.getenv("DATABASE_URL")
