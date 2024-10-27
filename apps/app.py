@@ -1,10 +1,9 @@
-import psycopg2
 import random
 import uuid
 import os
 
 from datetime import datetime
-
+import psycopg2
 # thrid party imports
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
