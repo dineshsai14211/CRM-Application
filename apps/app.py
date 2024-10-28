@@ -22,6 +22,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 # Initialize SQLAlchemy with the Flask app
 db.init_app(app)
 
+@app.route("/",methods=["GET"])
+def welcome():
+    return jsonify({"message": "Welcome to Backend flask-CRM application", "status": "Success"}), 200
+
 
 @app.route('/new_customer', methods=["POST"])
 def register_new_customer():

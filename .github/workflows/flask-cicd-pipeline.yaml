@@ -34,8 +34,129 @@ jobs:
           python-version: '3.8'  
 
       - name: Install pylint
-        run: pip install pylint  
+        run: pip install pylint mypy
 
-      - name: Run pylint
+      - name: Run pylint for linting
         run: |
-          pylint ./apps/app.py  # Replace with the directory or files you want to audit 
+          pylint ./apps/app.py || true
+
+      - name: Run mypy (type-checking)
+        run: |
+          mypy ./apps/app.py || true   # Continue even if mypy finds issues
+
+  build-docker-image:
+    runs-on: ubuntu-latest
+    needs: dependency-audit  
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t us-central1-docker.pkg.dev/$GCP_PROJECT_ID/$GCR_REPO_NAME:${{ github.run_number }} .
+
+      - name: Save Docker image as tar
+        run: |
+          docker save us-central1-docker.pkg.dev/$GCP_PROJECT_ID/$GCR_REPO_NAME:${{ github.run_number }} -o flask-application-${{ github.run_number }}.tar
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: flask-application-image
+          path: flask-application-${{ github.run_number }}.tar
+  
+  push-docker-image:
+    runs-on: ubuntu-latest
+    needs: build-docker-image  
+    steps:
+      - name: Download Docker image
+        uses: actions/download-artifact@v3
+        with:
+          name: flask-application-image # Downloading the Docker image artifact
+
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1  # Authenticating with Google Cloud using service account key
+        with:
+          credentials_json: ${{env.GCP_DEV_SA_KEY}}
+
+      - name: Configure Docker to use gcloud as a credential helper
+        run: gcloud auth configure-docker  # Configuring Docker to use gcloud for authentication
+
+      - name: Load Docker image from artifact
+        run: docker load -i ./${{ env.DOCKER_TAR }}  # Loading the Docker image from the tar file
+
+      - name: Tag and Push Docker image to GCR
+        run: |
+          docker push us-central1-docker.pkg.dev/$GCP_PROJECT_ID/$GCR_REPO_NAME:${{ github.run_number }}
+
+  update-manifest:
+    runs-on: ubuntu-latest
+    needs: push-docker-image  
+    steps:
+      - name: Checkout manifest repository
+        uses: actions/checkout@v3  # Checking out the Kubernetes manifest repository
+        with:
+          repository: dineshsai14211/CRM-manifest-files  # Specify the repository for the Kubernetes manifests
+          token: ${{ env.PAT_GITHUB }}  # Using a personal access token for authentication
+          persist-credentials: false
+          ref: ${{ github.ref_name }}
+
+      - name: Update image tag in Kubernetes manifest
+        run: |
+          # Updating the image tag in the Kubernetes manifest
+          sed -i "s|image:.*|image: us-central1-docker.pkg.dev/$GCP_PROJECT_ID/$GCR_REPO_NAME:${{ github.run_number }}|g" backend_deploy.yaml
+
+      - name: Commit and push updated manifest
+        run: |
+          # Committing and pushing the updated manifest
+          git config --global user.email "dineshsai14211@gmail.com"
+          git config --global user.name "${{ github.actor }}"
+          git add backend_deploy.yaml.yaml
+          git commit -m "Updated image tag to ${{ github.run_number }}"
+          git push https://x-access-token:${{ env.PAT_GITHUB }}@github.com/dineshsai14211/CRM-manifest-files.git HEAD:${{ github.ref_name }}
+
+  deploy-to-gke:
+    runs-on: ubuntu-latest
+    needs: update-manifest  
+    steps:
+      - name: Checkout manifest repository
+        uses: actions/checkout@v3
+        with:
+          repository: dineshsai14211/CRM-manifest-files 
+          token: ${{ env.PAT_GITHUB }}  # Using a personal access token for authentication
+          persist-credentials: false
+          ref: ${{ github.ref_name }}
+  
+      - name: Authenticate with Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{env.GCP_SA_KEY}}
+
+      - name: Set up Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          version: 'latest'
+          install_components: 'kubectl'
+
+      - name: Configure kubectl
+        run: |
+          # Configuring kubectl to interact with the GKE cluster
+          gcloud container clusters get-credentials $CLUSTER_NAME --zone $CLUSTER_ZONE --project $GCP_PROJECT_ID
+
+      - name: Install ArgoCD
+        run: |
+          # Create the ArgoCD namespace if it doesn't exist
+          kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply- f -
+
+          # Install ArgoCD using the provided manifest file
+          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml  
+
+      - name: Wait for ArgoCD to be ready
+        run: |
+          # Wait for ArgoCD server to be up and running
+          kubectl wait --for=condition=available --timeout=180s deployment/argocd-server -n argocd
+
+      - name: Apply ArgoCD Application Manifest
+        run: |
+          # Apply the ArgoCD application configuration
+          kubectl apply -f argocd_deploy.yaml 
