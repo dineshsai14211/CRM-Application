@@ -57,6 +57,7 @@ class Opportunity(db.Model):
     opportunity_id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
     opportunity_name = db.Column(db.String(255))
     account_id = db.Column(db.String, db.ForeignKey('account.account_id'))
+    account = db.relationship('Account', backref='opportunities')
     close_date = db.Column(db.Date)
     amount = db.Column(db.DECIMAL(10, 2))
     description = db.Column(db.Text)
@@ -77,6 +78,7 @@ class Opportunity(db.Model):
             'opportunity_id': self.opportunity_id,
             'opportunity_name': self.opportunity_name,
             'account_id': self.account_id,
+            'account_name': self.account.account_name if self.account else None,
             'close_date': format_datetime(self.close_date),
             'amount': self.amount,
             'description': self.description,
