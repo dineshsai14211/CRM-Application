@@ -11,7 +11,6 @@ Base = declarative_base()
 def format_datetime(value):
     return value.strftime('%Y-%m-%d %H:%M:%S') if value else None
 
-
 def currency_conversions(opportunity):
     return {
         'usd': opportunity.usd,
@@ -23,7 +22,6 @@ def currency_conversions(opportunity):
 # Define the Account model
 class Account(db.Model):
     __tablename__ = 'account'
-
     account_id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
     account_name = db.Column(db.String(255), nullable=False)
 
@@ -33,11 +31,9 @@ class Account(db.Model):
             'account_name': self.account_name
         }
 
-
 # Define the Dealer model
 class Dealer(db.Model):
     __tablename__ = 'dealer'
-
     dealer_id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
     dealer_code = db.Column(db.String(50), nullable=False)
     opportunity_owner = db.Column(db.String(255), nullable=False)
@@ -49,11 +45,9 @@ class Dealer(db.Model):
             'opportunity_owner': self.opportunity_owner
         }
 
-
 # Define the Opportunity model
 class Opportunity(db.Model):
     __tablename__ = 'opportunity'
-
     opportunity_id = db.Column(db.String, primary_key=True, default=lambda: str(uuid.uuid4()))
     opportunity_name = db.Column(db.String(255))
     account_id = db.Column(db.String, db.ForeignKey('account.account_id'))
