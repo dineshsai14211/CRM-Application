@@ -13,6 +13,8 @@ env:
   DOCKER_IMG: "docker-flask"  
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+  CLUSTER_NAME: ${{secrets.CLUSTER_NAME}}
+  CLUSTER_ZONE: ${{secrets.CLUSTER_ZONE}}
   PAT_GITHUB: ${{secrets.PAT_GITHUB}}
 
 jobs:
