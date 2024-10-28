@@ -10,8 +10,8 @@ permissions:
 env:
   GCR_REPO_NAME: ${{ secrets.GCR_REPO_NAME }}  
   DOCKER_TAR: "docker_image_${{ github.run_number }}.tar"    
-  GCP_PROJECT_ID: ${{ secrets.GCP_DEV_PROJECT_ID }}
-  GCP_DEV_SA_KEY: ${{ secrets.GCP_DEV_SA_KEY }}
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
   PAT_GITHUB: ${{secrets.PAT_GITHUB}}
 
 jobs:
@@ -77,7 +77,7 @@ jobs:
       - name: Authenticate with Google Cloud
         uses: google-github-actions/auth@v1  # Authenticating with Google Cloud using service account key
         with:
-          credentials_json: ${{env.GCP_DEV_SA_KEY}}
+          credentials_json: ${{env.GCP_SA_KEY}}
 
       - name: Configure Docker to use gcloud as a credential helper
         run: gcloud auth configure-docker  # Configuring Docker to use gcloud for authentication
