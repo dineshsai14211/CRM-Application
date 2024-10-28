@@ -152,7 +152,7 @@ jobs:
           kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply f -
 
           # Install ArgoCD using the provided manifest file
-          kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml  
+          kubectl apply -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml -n argocd
 
       - name: Wait for ArgoCD to be ready
         run: |
