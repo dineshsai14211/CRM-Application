@@ -71,17 +71,17 @@ def register_new_customer():
         # Validate dealer details
         dealer_id = data.get("dealer_id")
         dealer_code = data.get("dealer_code")
-        owner = data.get("opportunity_owner")
+        owner = data.get("opportunity_name")
 
         if not dealer_id or not dealer_code or not owner:
-            log_error("dealer_id, dealer_code, and opportunity_owner are required")
-            return jsonify({"error": "dealer_id, dealer_code, and opportunity_owner are required"}), 400
+            log_error("dealer_id, dealer_code, and opportunity_name are required")
+            return jsonify({"error": "dealer_id, dealer_code, and opportunity_name are required"}), 400
 
         # Check if the dealer exists
         existing_dealer = db.session.query(Dealer).filter_by(
             dealer_id=dealer_id,
             dealer_code=dealer_code,
-            opportunity_owner=owner
+            opportunity_name=owner
         ).first()
 
         if not existing_dealer:
@@ -89,7 +89,7 @@ def register_new_customer():
             new_dealer = Dealer(
                 dealer_id=dealer_id,
                 dealer_code=dealer_code,
-                opportunity_owner=owner
+                opportunity_name=owner
             )
             db.session.add(new_dealer)
             db.session.commit()
@@ -170,20 +170,20 @@ def get_all_customers():
         # Read all the query parameters
         dealer_id = request.args.get('dealer_id')
         dealer_code = request.args.get('dealer_code')
-        opportunity_owner = request.args.get('opportunity_owner')
+        opportunity_name = request.args.get('opportunity_name')
 
         log_debug(
-            f"GET /get-customers- dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_owner={opportunity_owner}")
+            f"GET /get-customers- dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
 
         dealer = db.session.query(Dealer).filter_by(
             dealer_id=dealer_id,
             dealer_code=dealer_code,
-            opportunity_owner=opportunity_owner
+            opportunity_name=opportunity_name
         ).first()
 
         if not dealer:
             log_debug(
-                f"GET /get-customers- Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_owner={opportunity_owner}")
+                f"GET /get-customers- Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
             return jsonify({"error": "Invalid dealer information"}), 401
 
         log_debug(
@@ -228,21 +228,21 @@ def get_single_customer():
         # Read all the query parameters
         dealer_id = request.args.get('dealer_id')
         dealer_code = request.args.get('dealer_code')
-        opportunity_owner = request.args.get('opportunity_owner')
+        opportunity_name = request.args.get('opportunity_name')
         opportunity_id = request.args.get('opportunity_id')
 
         log_debug(
-            f"GET /single-customer- query parameters: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_owner={opportunity_owner}, opportunity_id={opportunity_id}")
+            f"GET /single-customer- query parameters: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}, opportunity_id={opportunity_id}")
 
         dealer = db.session.query(Dealer).filter_by(
             dealer_id=dealer_id,
             dealer_code=dealer_code,
-            opportunity_owner=opportunity_owner
+            opportunity_name=opportunity_name
         ).first()
 
         if not dealer:
             log_debug(
-                f"GET /single-customer - Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_owner={opportunity_owner}")
+                f"GET /single-customer - Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
             return jsonify({"error": "Invalid dealer information"}), 401
 
         log_debug(
