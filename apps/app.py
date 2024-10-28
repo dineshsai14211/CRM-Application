@@ -33,10 +33,10 @@ def register_new_customer():
     Registers a new customer in the opportunity table.
     :return: JSON response with detailed customer information.
     """
-    logger.info("Registering a new customer")
+    log_info("Registering a new customer")
     try:
         data = request.get_json()
-        logger.info(f"Received data: {data}")
+        log_info(f"Received data: {data}")
 
         # Generate unique opportunity ID
         generated_opportunity_id = str(uuid.uuid1())
@@ -48,7 +48,7 @@ def register_new_customer():
         # Validate account details
         customer_account_name = data.get("account_name")
         if not customer_account_name:
-            logger.error("account_name is required")
+            log_error("account_name is required")
             return jsonify({"error": "account_name is required"}), 400
 
         # Check if the account exists
@@ -62,11 +62,11 @@ def register_new_customer():
             )
             db.session.add(new_account)
             db.session.commit()
-            logger.info(f"Created new account: {new_account_id}")
+            log_info(f"Created new account: {new_account_id}")
             account_id = new_account_id
         else:
             account_id = existing_account.account_id
-            logger.info(f"Found existing account: {account_id}")
+            log_info(f"Found existing account: {account_id}")
 
         # Validate dealer details
         dealer_id = data.get("dealer_id")
@@ -74,7 +74,7 @@ def register_new_customer():
         owner = data.get("opportunity_owner")
 
         if not dealer_id or not dealer_code or not owner:
-            logger.error("dealer_id, dealer_code, and opportunity_owner are required")
+            log_error("dealer_id, dealer_code, and opportunity_owner are required")
             return jsonify({"error": "dealer_id, dealer_code, and opportunity_owner are required"}), 400
 
         # Check if the dealer exists
@@ -93,16 +93,16 @@ def register_new_customer():
             )
             db.session.add(new_dealer)
             db.session.commit()
-            logger.info(f"Created new dealer: {dealer_id}")
+            log_info(f"Created new dealer: {dealer_id}")
 
         # Parse close_date if provided
         close_date = data.get("close_date")
         if close_date:
             try:
                 close_date = datetime.strptime(close_date, "%Y-%m-%d %H:%M:%S")
-                logger.info(f"Parsed close date: {close_date}")
+                log_info(f"Parsed close date: {close_date}")
             except ValueError as e:
-                logger.error(f"Invalid date format for close_date: {str(e)}")
+                log_error(f"Invalid date format for close_date: {str(e)}")
                 return jsonify({"error": f"Invalid date format for close_date: {str(e)}"}), 400
         else:
             close_date = None
@@ -137,7 +137,7 @@ def register_new_customer():
 
         db.session.add(new_opportunity_record)
         db.session.commit()
-        logger.info(f"Created new opportunity: {generated_opportunity_id}")
+        log_info(f"Created new opportunity: {generated_opportunity_id}")
 
         customer_data = new_opportunity_record.opportunity_to_dict()
 
@@ -149,12 +149,12 @@ def register_new_customer():
 
     except SQLAlchemyError as e:
         db.session.rollback()  # Rollback the session in case of a database error
-        logger.error(f"Database error: {str(e)}")
+        log_error(f"Database error: {str(e)}")
         return jsonify({"error": "Database error", "details": str(e)}), 500
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Internal server error: {str(e)}")
+        log_error(f"Internal server error: {str(e)}")
         return jsonify({"error": "Internal server error", "details": str(e)}), 500
 
     finally:
