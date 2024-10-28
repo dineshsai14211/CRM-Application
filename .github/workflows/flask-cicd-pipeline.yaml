@@ -9,7 +9,7 @@ permissions:
   contents: write  
 env:
   GCR_REPO_NAME: ${{ secrets.GCR_REPO_NAME }}  
-  DOCKER_TAR: "docker_image_${{ github.run_number }}.tar"    
+  DOCKER_TAR: "flask-application-${{ github.run_number }}.tar"    
   GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
   PAT_GITHUB: ${{secrets.PAT_GITHUB}}
