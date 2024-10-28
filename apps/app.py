@@ -173,26 +173,31 @@ def get_all_customers():
         opportunity_name = request.args.get('opportunity_name')
 
         log_debug(
-            f"GET /get-customers- dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
+            f"GET /get-customers - dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
 
+        # Query the Dealer table for validation
         dealer = db.session.query(Dealer).filter_by(
             dealer_id=dealer_id,
-            dealer_code=dealer_code,
-            opportunity_name=opportunity_name
+            dealer_code=dealer_code
         ).first()
 
         if not dealer:
             log_debug(
-                f"GET /get-customers- Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
+                f"GET /get-customers - Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}")
             return jsonify({"error": "Invalid dealer information"}), 401
 
         log_debug(
             f"GET /get-customers - Dealer validation successful for dealer_id={dealer_id}, dealer_code={dealer_code}")
 
+        # Query the Opportunity table for customer results
         customer_results = db.session.query(Opportunity).filter_by(dealer_code=dealer_code).all()
 
+        # If opportunity_name is provided, further filter the results
+        if opportunity_name:
+            customer_results = [customer for customer in customer_results if customer.opportunity_name == opportunity_name]
+
         if not customer_results:
-            log_debug(f"GET /get-customers- No customers found for dealer_code={dealer_code}")
+            log_debug(f"GET /get-customers - No customers found for dealer_code={dealer_code} with opportunity_name={opportunity_name}")
             return jsonify({"message": "No customers found for the given dealer code"}), 404
 
         customer_data = [customer.opportunity_to_dict() for customer in customer_results]
