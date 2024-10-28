@@ -22,10 +22,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 # Initialize SQLAlchemy with the Flask app
 db.init_app(app)
 
-@app.route("/",methods=["GET"])
-def welcome():
-    return jsonify({"message": "Welcome to Backend flask-CRM application", "status": "Success"}), 200
 
+@app.route("/", methods=["GET"])
+def welcome():
+    return jsonify({"message": "Welcome to the Backend Flask-CRM application", "status": "Success"}), 200
 
 @app.route('/new_customer', methods=["POST"])
 def register_new_customer():
@@ -40,8 +40,6 @@ def register_new_customer():
 
         # Generate unique opportunity ID
         generated_opportunity_id = str(uuid.uuid1())
-
-        # Get current date and time (without timezone)
         created_timestamp = datetime.now()
         data.update({'created_date': created_timestamp, 'opportunity_id': generated_opportunity_id})
 
@@ -53,44 +51,35 @@ def register_new_customer():
 
         # Check if the account exists
         existing_account = db.session.query(Account).filter_by(account_name=customer_account_name).first()
-        if not existing_account:
-            # If account doesn't exist, create a new one
-            new_account_id = str(uuid.uuid4())  # Generate a new UUID for account
-            new_account = Account(
-                account_id=new_account_id,
-                account_name=customer_account_name
-            )
-            db.session.add(new_account)
-            db.session.commit()
-            log_info(f"Created new account: {new_account_id}")
-            account_id = new_account_id
-        else:
+        if existing_account:
             account_id = existing_account.account_id
             log_info(f"Found existing account: {account_id}")
+        else:
+            # Create a new account if it doesn't exist
+            account_id = str(uuid.uuid4())
+            new_account = Account(account_id=account_id, account_name=customer_account_name)
+            db.session.add(new_account)
+            db.session.commit()
+            log_info(f"Created new account: {account_id}")
 
         # Validate dealer details
         dealer_id = data.get("dealer_id")
         dealer_code = data.get("dealer_code")
-        owner = data.get("opportunity_name")
+        opportunity_name = data.get("opportunity_name")
 
-        if not dealer_id or not dealer_code or not owner:
+        if not dealer_id or not dealer_code or not opportunity_name:
             log_error("dealer_id, dealer_code, and opportunity_name are required")
             return jsonify({"error": "dealer_id, dealer_code, and opportunity_name are required"}), 400
 
         # Check if the dealer exists
         existing_dealer = db.session.query(Dealer).filter_by(
             dealer_id=dealer_id,
-            dealer_code=dealer_code,
-            opportunity_name=owner
+            dealer_code=dealer_code
         ).first()
 
         if not existing_dealer:
-            # If dealer doesn't exist, create a new dealer
-            new_dealer = Dealer(
-                dealer_id=dealer_id,
-                dealer_code=dealer_code,
-                opportunity_name=owner
-            )
+            # Create a new dealer if it doesn't exist
+            new_dealer = Dealer(dealer_id=dealer_id, dealer_code=dealer_code, opportunity_name=opportunity_name)
             db.session.add(new_dealer)
             db.session.commit()
             log_info(f"Created new dealer: {dealer_id}")
@@ -107,10 +96,6 @@ def register_new_customer():
         else:
             close_date = None
 
-        # Determine stage from probability
-        probability_value = data.get("probability")
-        sales_stage = data.get("stage", "Unknown")
-
         # Handle currency conversion
         opportunity_amount = data.get("amount")
         converted_currency_values = currency_conversion(opportunity_amount) if opportunity_amount else {}
@@ -118,15 +103,15 @@ def register_new_customer():
         # Create a new opportunity record
         new_opportunity_record = Opportunity(
             opportunity_id=generated_opportunity_id,
-            opportunity_name=data.get("opportunity_name"),
+            opportunity_name=opportunity_name,
             account_id=account_id,
             close_date=close_date,
             amount=opportunity_amount,
             description=data.get("description"),
             dealer_id=dealer_id,
             dealer_code=dealer_code,
-            stage=sales_stage,
-            probability=probability_value,
+            stage=data.get("stage", "Unknown"),
+            probability=data.get("probability"),
             next_step=data.get("next_step"),
             created_date=created_timestamp,
             usd=converted_currency_values.get("USD"),
@@ -141,7 +126,6 @@ def register_new_customer():
 
         customer_data = new_opportunity_record.opportunity_to_dict()
 
-        # Return success response with the customer details
         return jsonify({
             "message": "Customer created successfully",
             "customer_details": customer_data
@@ -167,13 +151,11 @@ def get_all_customers():
     """
     log_info("GET /get-customers - get_all_customers function has started")
     try:
-        # Read all the query parameters
         dealer_id = request.args.get('dealer_id')
         dealer_code = request.args.get('dealer_code')
         opportunity_name = request.args.get('opportunity_name')
 
-        log_debug(
-            f"GET /get-customers - dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
+        log_debug(f"GET /get-customers - dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
 
         # Query the Dealer table for validation
         dealer = db.session.query(Dealer).filter_by(
@@ -182,17 +164,14 @@ def get_all_customers():
         ).first()
 
         if not dealer:
-            log_debug(
-                f"GET /get-customers - Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}")
+            log_debug(f"GET /get-customers - Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}")
             return jsonify({"error": "Invalid dealer information"}), 401
 
-        log_debug(
-            f"GET /get-customers - Dealer validation successful for dealer_id={dealer_id}, dealer_code={dealer_code}")
+        log_debug(f"GET /get-customers - Dealer validation successful for dealer_id={dealer_id}, dealer_code={dealer_code}")
 
         # Query the Opportunity table for customer results
         customer_results = db.session.query(Opportunity).filter_by(dealer_code=dealer_code).all()
 
-        # If opportunity_name is provided, further filter the results
         if opportunity_name:
             customer_results = [customer for customer in customer_results if customer.opportunity_name == opportunity_name]
 
@@ -222,54 +201,50 @@ def get_all_customers():
         db.session.close()
         log_info("GET /get-customers - End of get_all_customers function")
 
-
 @app.route('/single-customer', methods=['GET'])
 def get_single_customer():
     """
     Fetch a single customer's information based on the opportunity ID.
     """
-    log_info("GET /single-customer - get_single_customer function has stated...")
+    log_info("GET /single-customer - get_single_customer function has started...")
     try:
-        # Read all the query parameters
         dealer_id = request.args.get('dealer_id')
         dealer_code = request.args.get('dealer_code')
         opportunity_name = request.args.get('opportunity_name')
         opportunity_id = request.args.get('opportunity_id')
 
-        log_debug(
-            f"GET /single-customer- query parameters: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}, opportunity_id={opportunity_id}")
+        log_debug(f"GET /single-customer - query parameters: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}, opportunity_id={opportunity_id}")
 
         dealer = db.session.query(Dealer).filter_by(
             dealer_id=dealer_id,
-            dealer_code=dealer_code,
-            opportunity_name=opportunity_name
+            dealer_code=dealer_code
         ).first()
 
         if not dealer:
-            log_debug(
-                f"GET /single-customer - Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
+            log_debug(f"GET /single-customer - Invalid dealer information: dealer_id={dealer_id}, dealer_code={dealer_code}, opportunity_name={opportunity_name}")
             return jsonify({"error": "Invalid dealer information"}), 401
 
-        log_debug(
-            f"GET /single-customer- Dealer validation successful for dealer_id={dealer_id}, dealer_code={dealer_code}")
+        log_debug(f"GET /single-customer - Dealer validation successful for dealer_id={dealer_id}, dealer_code={dealer_code}")
 
-        customer = db.session.query(Opportunity).filter_by(opportunity_id=opportunity_id).first()
+        # Query for the customer
+        customer = db.session.query(Opportunity).filter_by(
+            opportunity_id=opportunity_id
+        ).first()
 
         if not customer:
-            log_debug(f"GET /single-customer - No customer found for opportunity_id={opportunity_id}")
-            return jsonify({"message": "No customer found for the given opportunity ID"}), 404
+            log_debug(f"GET /single-customer - No customer found with opportunity_id={opportunity_id}")
+            return jsonify({"error": "Customer not found"}), 404
 
-        customer_data = customer.opportunity_to_dict()
-        log_debug(f"GET /single-customer- Customer data retrieved for opportunity_id={opportunity_id}")
+        log_info(f"GET /single-customer - Found customer with opportunity_id={opportunity_id}")
 
         return jsonify({
-            "message": "Customer fetched successfully",
-            "customer": customer_data
+            "message": "Customer found",
+            "customer": customer.opportunity_to_dict()
         }), 200
 
     except SQLAlchemyError as e:
-        db.session.rollback()  # Rollback the session on error
-        log_error(f"GET /single-customer Database error occurred: {str(e)}")
+        db.session.rollback()  # Rollback on error
+        log_error(f"GET /single-customer - Database error occurred: {str(e)}")
         return jsonify({"error": "Database error", "details": str(e)}), 500
 
     except Exception as e:
@@ -279,9 +254,8 @@ def get_single_customer():
 
     finally:
         db.session.close()
-        log_info("GET /single-customer- End of get_single_customer function")
-
-
+        log_info("GET /single-customer - End of get_single_customer function")
+        
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
