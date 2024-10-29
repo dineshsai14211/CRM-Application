@@ -68,17 +68,44 @@ jobs:
           name: flask-application-image
           path: flask-application-${{ github.run_number }}.tar
   
-  push-docker-image:
+  docker-image-scan:
     runs-on: ubuntu-latest
     needs: build-docker-image  
+    steps:
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: flask-application-image
+
+      - name: Load Docker image from artifact
+        run: docker load -i ./${{ env.DOCKER_TAR }}
+
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: "us-central1-docker.pkg.dev/$GCP_PROJECT_ID/$GCR_REPO_NAME/$DOCKER_IMG:${{ github.run_number }}"
+          format: 'table'
+          severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'  # Scanning for all severity levels
+          exit-code: '0'   # Ensures the job does not fail on vulnerabilities
+          output: 'trivy-report.txt'
+
+      - name: Upload Trivy scan report
+        uses: actions/upload-artifact@v3
+        with:
+          name: trivy-scan-report
+          path: trivy-report.txt
+  
+  push-docker-image:
+    runs-on: ubuntu-latest
+    needs: docker-image-scan  
     steps:
       - name: Download Docker image
         uses: actions/download-artifact@v3
         with:
-          name: flask-application-image # Downloading the Docker image artifact
+          name: flask-application-image 
 
       - name: Authenticate with Google Cloud
-        uses: google-github-actions/auth@v1  # Authenticating with Google Cloud using service account key
+        uses: google-github-actions/auth@v1  
         with:
           credentials_json: ${{env.GCP_SA_KEY}}
 
