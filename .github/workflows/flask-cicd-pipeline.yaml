@@ -22,14 +22,14 @@ jobs:
       runs-on: ubuntu-latest
       steps:
         - name: Checkout code
-          uses: actions/checkout@v3  
+          uses: actions/checkout@v4 
 
   dependency-audit:
     runs-on: ubuntu-latest
     needs: checkout  
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  
+        uses: actions/checkout@v4 
 
       - name: Install Python
         uses: actions/setup-python@v3  
@@ -52,7 +52,7 @@ jobs:
     needs: dependency-audit  
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Build Docker image
         run: |
@@ -124,7 +124,7 @@ jobs:
     needs: push-docker-image  
     steps:
       - name: Checkout manifest repository
-        uses: actions/checkout@v3  # Checking out the Kubernetes manifest repository
+        uses: actions/checkout@v4 # Checking out the Kubernetes manifest repository
         with:
           repository: dineshsai14211/CRM-manifest-files  # Specify the repository for the Kubernetes manifests
           token: ${{ env.PAT_GITHUB }}  # Using a personal access token for authentication
@@ -150,7 +150,7 @@ jobs:
     needs: update-manifest  
     steps:
       - name: Checkout manifest repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: dineshsai14211/CRM-manifest-files 
           token: ${{ env.PAT_GITHUB }}  # Using a personal access token for authentication
