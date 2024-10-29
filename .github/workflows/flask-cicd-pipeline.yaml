@@ -84,17 +84,22 @@ jobs:
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: "us-central1-docker.pkg.dev/${{env.GCP_PROJECT_ID}}/${{env.GCR_REPO_NAME}}/${{env.DOCKER_IMG}}:${{ github.run_number }}"
-          format: 'table'
+          format: sarif'
           severity: 'UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL'  # Scanning for all severity levels
           exit-code: '0'   # Ensures the job does not fail on vulnerabilities
-          output: 'trivy-report.txt'
+          output: 'trivy-report.sarif'
 
       - name: Upload Trivy scan report
         uses: actions/upload-artifact@v3
         with:
           name: trivy-scan-report
-          path: trivy-report.txt
-  
+          path: trivy-report.sarif
+          
+      - name: Upload SARIF to GitHub Code Scanning
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: trivy-report.sarif
+
   push-docker-image:
     runs-on: ubuntu-latest
     needs: docker-image-scan  
