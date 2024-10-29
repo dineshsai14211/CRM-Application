@@ -6,7 +6,9 @@ on:
       - main               
 
 permissions:
-  contents: write  
+  contents: write
+  security-events: write 
+  
 env:
   GCR_REPO_NAME: ${{ secrets.GCR_REPO_NAME }}  
   DOCKER_TAR: "flask-application-${{ github.run_number }}.tar"  
