@@ -1,0 +1,1 @@
+[![Flask-Application CI-CD Pipeline](https://github.com/dineshsai14211/CRM-Application/actions/workflows/flask-cicd-pipeline.yaml/badge.svg)](https://github.com/dineshsai14211/CRM-Application/actions/workflows/flask-cicd-pipeline.yaml)
