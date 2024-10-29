@@ -96,7 +96,7 @@ jobs:
           path: trivy-report.sarif
 
       - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v2
+        uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-report.sarif
 
