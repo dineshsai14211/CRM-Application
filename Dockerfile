@@ -41,3 +41,5 @@ ENV PYTHONPATH="${PYTHONPATH}:/main"
 CMD ["python", "apps/app.py"]
 
 
+
+
